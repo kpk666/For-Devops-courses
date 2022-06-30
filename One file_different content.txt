@@ -1,1 +1,4 @@
+
 Another part for branch lesson_10_part_B
+
+more detailes for branch lesson_10_part_C

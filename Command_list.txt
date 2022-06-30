@@ -3,7 +3,7 @@ git config --global user.email "kpk666@tut.by"
 git config --global user.name "kpk666"
 
 # Установка ветки github
-git remote origin https://github.com/kpk666/For-Devops-courses.git
+git remote origin git@github.com:kpk666/For-Devops-courses.git
 
 #Конфигурация git
 git init

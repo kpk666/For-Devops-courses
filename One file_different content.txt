@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 
 Another part for branch lesson_10_part_B
 
 more detailes for branch lesson_10_part_C
+=======
+Information for branch lesson_10 
+>>>>>>> lesson_10

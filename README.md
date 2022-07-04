@@ -1,2 +1,2 @@
 # For-Devops-courses
-md making trening
+Kirill Astrovskiy

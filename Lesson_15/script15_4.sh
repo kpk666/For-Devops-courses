@@ -51,7 +51,7 @@ then
 	echo "Goodbuy!"
 	break
 else
-	echo "I tend to suggest that it means "no", so Goodbuy!"
+	echo "I tend to suggest that it means "no", so Goodbye!"
 	break
 fi
 done

@@ -48,7 +48,7 @@ then
 continue
 elif [ $answer == "n" ]
 then
-	echo "Goodbuy!"
+	echo "Goodbye!"
 	break
 else
 	echo "I tend to suggest that it means "no", so Goodbye!"

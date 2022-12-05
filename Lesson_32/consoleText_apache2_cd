@@ -1,0 +1,9 @@
+Started by upstream project "apache_CI" build number 4
+originally caused by:
+ Started by user Admin Adminov
+Running as SYSTEM
+Building in workspace /var/lib/jenkins/workspace/apache_CD
+[apache_CD] $ /bin/sh -xe /tmp/jenkins7634803646168768135.sh
++ sudo docker run -p 8089:80 -d --rm --name apache_test apache2_test:1.1
+b40aabedd8f13f3c95631b2b60da29e2ccde67c04382e1c7fc336bc8defbffce
+Finished: SUCCESS

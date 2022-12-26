@@ -1,0 +1,11 @@
+server {
+	listen 8085 default_server;
+	listen [::]:8085 default_server;
+	root /opt/nginx/;
+	index test.html index.htm index.nginx-debian.html;
+	server_name _;
+	location / {
+		try_files $uri $uri/ =404;
+	}
+}
+

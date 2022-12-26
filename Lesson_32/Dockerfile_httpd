@@ -1,0 +1,11 @@
+FROM httpd:2.4
+
+ARG DOCKER_MESSAGE
+
+ENV ENV_DOCKER_MESSAGE $DOCKER_MESSAGE
+
+WORKDIR /usr/local/apache2/htdocs/
+
+COPY index.html .
+
+RUN chmod 644 index.html

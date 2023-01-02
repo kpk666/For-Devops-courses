@@ -194,7 +194,7 @@
         "SecurityGroupIngress" : [ {
           "IpProtocol" : "tcp",
           "FromPort" : "22",
-          "ToPort" : "22",
+          "ToPort" : "2200",
           "CidrIp" : { "Ref" : "SSHLocation"}
         } ]
       }

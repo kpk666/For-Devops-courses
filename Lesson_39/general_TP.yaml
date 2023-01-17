@@ -1,0 +1,594 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Here should be a description of the template" 
+
+Metadata:
+  AWS::CloudFormation::Interface:
+      ParameterGroups:
+        - 
+          Label:
+            default: "Network Configuration"
+          Parameters:
+            - Environment
+            - VCPCidr
+            
+        -
+          Label:
+            default: "SubnetCIDR Blocks"
+          Parameters:
+            - PublicSubnetCIDR            
+            - PrivateSubnet1ACIDR
+            - PrivateSubnet1BCIDR
+            - PrivateSubnet2ACIDR
+            - PrivateSubnet2BCIDR 
+            - DatabaseSubnetCIDR
+
+# Parameters begin-----------------------------------
+
+Parameters:
+  Environment:
+    Description: AWS VPC
+    Type: String
+    Default: "vpc-042884a1f4f1e3b08"
+  
+  VpcCidr:
+    Description: IP adresses range
+    Type: String
+    Default: '172.31.0.0/16'
+
+  KeyName:
+    Description: Keys for Instances
+    type: 'AWS::EC2::KeyPair::KeyName'
+
+  BucketName:
+    Description: A place to retain information
+    Type: String
+    Default: "astrovskiy-bucket"
+  
+  InstanceType:
+    Description: What instance will start
+    Type: String
+    Default: 't2.micro'
+  
+  SSHLocation:
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}\\).\\d{1,3})/(\\d{1,2})"
+
+  SSHLocationBastion:
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}\\).\\d{1,3})/(\\d{1,2})"
+
+  EnvironmentType:
+    Description: DB type 
+    Type: String
+    Default: dev
+    Allowedvalues:
+      - dev1
+      - dev2
+      - dev3
+    DBinstanceIdentifier:
+      Type: String
+      Default: "webapp-db"
+    DBusername:
+      Noecho: true
+      Description: db user
+      Type: String
+      MinLength: '1'
+      MaxLength: '20'
+      AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+      ConstraintDescription: Can not start with a number
+      Default: "postgres"
+      
+    DBpassword:
+      Noecho: true
+      Description: db user
+      Type: String
+      MinLength: '8'
+      MaxLength: '50'
+      AllowedPattern: "[a-zA-Z0-9]*"
+      ConstraintDescription: It should also content capital letters and numbers
+
+# Resourses begin----------------------------------------------------------------
+
+# Networks creation---------------------------------------------------------------
+
+Resurses:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDNSSupport: true
+      EnableDNSHostname: true
+      Tags:
+        - Key: Name
+          Value: !Ref Environment
+  
+  PublicSubnet:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 0, !Cidr [ !Ref VpcCidr, 12, 8] ]
+      MapPublicIpOnLaunch: True
+      AvailabityZone: !Select
+       - 0
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "PublicSubnet"
+
+  PrivateSubnet1A:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 1, !Cidr [ !Ref VpcCidr, 12, 8] ]
+      MapPublicIpOnLaunch: False
+      AvailabityZone: !Select
+       - 1
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "PrivateSubnet1A"
+  
+  PrivateSubnet1B:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 2, !Cidr [ !Ref VpcCidr, 12, 8] ]
+      MapPublicIpOnLaunch: False
+      AvailabityZone: !Select
+       - 2
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "PrivateSubnet1B"
+  
+  PrivateSubnet2A:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 3, !Cidr [ !Ref VpcCidr, 12, 8] ]
+      MapPublicIpOnLaunch: False
+      AvailabityZone: !Select
+       - 0
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "PrivateSubnet2A"
+  
+  PrivateSubnet2B:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 4, !Cidr [ !Ref VpcCidr, 12, 8] ]
+      MapPublicIpOnLaunch: False
+      AvailabityZone: !Select
+       - 1
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "PrivateSubnet2B"
+  
+  DatabaseSubnet:
+    Type: 'AWS::EC2::Subnet'
+    DependsOn: VPC
+    Properties:
+      VpcId: VPC
+      CidrBlock: !Select [ 5, !Cidr [ !Ref VpcCidr, 12, 8] ]      
+      AvailabityZone: !Select
+       - 0
+       - Fn::GetAZs: !Ref AWS::Region
+      Tags:
+        - Key: "Name"
+          Value: "DatabaseSubnet"
+
+# Routes installation------------------------------------------------------
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Environment
+
+  InternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  Routetable:
+    Type: 'AWS::EC2::Routetable'
+    Properties:
+      VpcId: !Ref VPC
+  
+  Route:
+    Type: 'AWS::EC2::Routetable'
+    DependsOn: InternetGateway
+    Properties:
+      RouteTableId: !Ref Routetable
+      DistinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  
+  SubnetRouteTableAssosiation:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    DependsOn: PublicSubnet
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref Routetable
+
+  EIP:
+    Type: 'AWS::EC2::EIP'
+    DependsOn: InternetGatewayAttachment
+  
+  NATGateWay:
+    Type: 'AWS::EC2::NatGateway'
+    DependsOn: PublicSubnet
+      Properties: 
+        AllocationId: !GetAtt EIP.AllocationId
+        SubnetId: !Ref PublicSubnet
+
+  NATRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: InternetGateway
+    Properties:
+      RouteTableId: !Ref PrivateRoutetable
+      DistinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NATGateWay
+
+# Routes for private subnets---------------------------------------------
+
+  PrivateNetsRoutes:
+    Type: 'AWS::EC2::Routetable'
+    Properties: 
+      VpcId: !Ref VPC
+
+  PrivateSubnetRouteTableAssosiation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    Properties: 
+      SubnetId: !Ref PrivateSubnet1A
+      RouteTableId: !Ref PrivateNetsRoutes
+  
+  PrivateSubnetRouteTableAssosiation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    Properties: 
+      SubnetId: !Ref PrivateSubnet1B
+      RouteTableId: !Ref PrivateNetsRoutes
+  
+  PrivateSubnetRouteTableAssosiation3:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    Properties: 
+      SubnetId: !Ref PrivateSubnet2A
+      RouteTableId: !Ref PrivateNetsRoutes
+  
+  PrivateSubnetRouteTableAssosiation4:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    Properties: 
+      SubnetId: !Ref PrivateSubnet2B
+      RouteTableId: !Ref PrivateNetsRoutes
+  
+  PrivateSubnetRouteTableAssosiation5:
+    Type: 'AWS::EC2::SubnetRouteTableAssosiation'
+    Properties: 
+      SubnetId: !Ref DatabaseSubnet
+      RouteTableId: !Ref PrivateNetsRoutes
+
+# BASTION------------------------------------------------------
+
+  Bastion:
+    Type: 'AWS::EC2::Instance'
+    DependsOn: 
+      - PublicSubnet
+      - InternetGateway
+      - NATGateWay
+    Properties:
+      Image-Id: ami-0039da1f3917fa8e3
+      InstanceType: t2.micro
+      SubnetId: !Ref PublicSubnet
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref SecurityGroupForBastion
+        - !Ref LoadBalancerSG2
+      Tags:
+        - Key: Name
+          Value: BastionInstance
+      UserData: !Base64 
+        'Fn::Sub': |
+          #!/bin/bash -xe
+          apt-get update
+
+  SecurityGroupForBastion:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: SSH access to BastionInstance
+      VpcId: VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocationBastion
+
+# S3 Bucket--------------------------------------------------------
+
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: LogDeliveryWrite
+      Bucketname: !Ref BucketName
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogBucket
+
+# LoadBalancer and AutoScalingGroup for Private1 Subnets------------
+
+  LoadBalancerSG1:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: HTTP Access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+
+  AutoScalingGroupPrivate1:
+   Type: 'AWS::AutoScaling::AutoScalingGroup'
+   DependsOn: 
+    - PrivateSubnet1A
+    - PrivateSubnet1B  
+    - LoadBalancerSG1
+   Properties:
+     AvailabilityZones:
+       - !Select [ 1, !GetAZs '' ]
+       - !Select [ 2, !GetAZs '' ]
+     VPCZoneIdentifier:
+       - !Ref PrivateSubnet1A
+       - !Ref PrivateSubnet1B
+     DesiredCapacity: 1
+     HealthCheckGracePeriod: 300
+     HealthCheckType: ELB    
+     MaxSize: 3
+     MinSize: 1
+     TargetGroupARNs:
+       - !Ref ALBTargetGroupPrivate
+     Tags:
+       - Key: Name
+         PropagateAtLaunch: false
+         Value: AutoScalingGroupPrivateSubnet1
+  
+   ApplicationLoadBalancerPrivate:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:  
+      - ALBTargetGroupPrivate
+      - AutoScalingGroupPrivate1      
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref ALBSecurityGroupFront
+      Subnets:
+       - !Ref PrivateSubnet1A
+       - !Ref PrivateSubnet1B
+      Certificates:
+        - CertificateArn: !Ref SSLCertificate
+
+  ALBListenerPrive:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref LoadBalancerSG1
+      LoadBalancerArn: !Ref ApplicationLoadBalancerPrivate
+      Port: '80'
+      Protocol: HTTP
+
+  ALBTargetGroupPrivate:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref VPC
+
+# LoadBalancer and AutoScalingGroup for Private2 Subnets------------
+
+  LoadBalancerSG2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: HTTP Access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 
+            - !Ref PrivateSubnet2A
+            - !Ref PrivateSubnet2B
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp:
+            - !Ref PrivateSubnet1A
+            - !Ref PrivateSubnet2B
+      VpcId: !Ref VPC
+
+  AutoScalingGroupPrivate2:
+   Type: 'AWS::AutoScaling::AutoScalingGroup'
+   DependsOn: 
+    - PrivateSubnet2A
+    - PrivateSubnet2B 
+    - ALBTargetGroupPrivate2
+   Properties:
+     AvailabilityZones:
+       - !Select [ 3, !GetAZs '' ]
+       - !Select [ 4, !GetAZs '' ]
+     VPCZoneIdentifier:
+       - !Ref PrivateSubnet2A
+       - !Ref PrivateSubnet2B
+     DesiredCapacity: 1
+     HealthCheckGracePeriod: 300
+     HealthCheckType: ELB     
+     MaxSize: 3
+     MinSize: 1
+     TargetGroupARNs:
+       - !Ref ALBTargetGroupPrivate2
+     Tags:
+       - Key: Name
+         PropagateAtLaunch: false
+         Value: AutoScalingGroupPrivateSubnet2  
+
+  ApplicationLoadBalancerPrivate2:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:  
+      - ALBTargetGroupPrivate2
+      - AutoScalingGroupPrivate2      
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSG2
+      Subnets:
+       - !Ref PrivateSubnet2A
+       - !Ref PrivateSubnet2B
+      
+  ElasticLoadBalancerPrivate2:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupPrivate2
+      LoadBalancerArn: !Ref ApplicationLoadBalancerPrivate2
+      Port: '80'
+      Protocol: HTTP
+
+  ALBTargetGroupPrivate2:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref VPC
+
+# DataBase--------------------------------------------------
+  
+  SubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    DependsOn: 
+       - !Ref "DatabaseSubnet"       
+    Properties:
+      DBSubnetGroupName: "subnetgroup"
+      DBSubnetGroupDescription: "Subnet Group"
+      SubnetIds:
+        - !Ref "DatabaseSubnet"        
+      
+  WebAppDatabase:
+    Type: AWS::RDS::DBInstance
+    DependsOn:
+      - SubnetGroup
+      - DataBaseSecurityGroup
+    Properties:
+      DBSubnetGroupName: !Ref "SubnetGroup"
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      VPCSecurityGroups:
+        - !GetAtt DataBaseSecurityGroup.GroupId
+      AllocatedStorage: "5"
+      DBInstanceClass: db.t2.micro 
+      Engine: postgres
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword      
+      Tags:
+        - Key: Name
+          Value: DatabaseInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+
+  DataBaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: WebAppSecurityGroup
+    Properties:
+      GroupName: !Join ["-", [webapp-db-security-group, !Ref EnvironmentType]]
+      GroupDescription: Allow postgres inbound traffic
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupName:
+            Ref: LoadBalancerSG2
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [webapp-db-security-group, !Ref EnvironmentType]]
+  
+ 
+# OutPuts------------------------------------------------------------
+Outputs:
+  
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+
+  PrivatedSubnets1:
+    Description: A list of the frontend private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1A, !Ref PrivateSubnet1B ]]
+
+  PrivateSubnets2:
+    Description: A list of the backend private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet2A, !Ref PrivateSubnet2B ]]
+
+  PublicSubnet:
+    Description: A reference to the public subnet 
+    Value: !Ref PublicSubnet
+
+  DatabaseSubnet:
+    Description: A reference to the databases subnet 
+    Value: !Ref DatabaseSubnet
+# LoadBalancer---------------------------------------------------------
+  URLback:
+    Description: URL of the website Back
+    Value: !Join
+      - ''
+      - - 'http://'
+        - !GetAtt
+          - ApplicationLoadBalancerBack
+          - DNSName  
+  URLfront:
+    Description: URL of the website Front
+    Value: !Join
+      - ''
+      - - 'http://'
+        - !GetAtt
+          - ApplicationLoadBalancerFront
+          - DNSName  
+# S3-------------------------------------------------------------------
+  MainBucketName:
+    Description: Name of the main bucket
+    Value: !Ref MainBucket
+  LogBucketName:
+    Description: Name of the access log bucket
+    Value: !Ref AccessLogBucket
+
+# DB-------------------------------------------------------------------
+  WebAppDatabaseEndpoint:
+    Description: "Connection endpoint for the database"
+    Value: !GetAtt WebAppDatabase.Endpoint.Address
+
+  URL_DB:
+    Description: URL of the Database
+    Value: !Join
+      - ''
+      - - 'http://'
+        - !GetAtt
+          - WebAppDatabase
+          - DNSName  

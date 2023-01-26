@@ -33,28 +33,32 @@ resource "aws_instance" "public_instance" {
   tags = merge(var.tags_sg, {
     name    = "public_instance_test"    
   })
-  user_data = file("user_data_front.sh")
+  # user_data = file("user_data.sh")
 
-  #  connection {
-  #   type     = "ssh"
-  #   user     = "ubuntu"
-  #   private_key = file("Astrovskiy-key.pem")
-  #   host     = self.public_ip
-  # }  
+   connection {
+    type     = "ssh"
+    user     = "ubuntu"
+    private_key = file("Astrovskiy-key.pem")
+    host     = self.public_ip
+  }  
 
-  #  provisioner "file" {
-  #   source      = "default.sh"
-  #   destination = "/tmp/default.sh"
-  # }
+   provisioner "file" {
+    source      = "./default"
+    destination = "/home/ubuntu/default"
+    # destination = "/etc/nginx/sites-available/default"
+  }
   
   
-  # provisioner "remote-exec" {
-  #   inline = [
-  #     "sudo chmod +x /tmp/script.sh",
-  #     "sudo /tmp/default.sh args",
-  #   ]
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update",
+      "sudo apt install nginx -y",
+      "sudo sed -i 's/0.0.0.0/${aws_instance.private_instance.public_ip}/' default",
+      "sudo cp default /etc/nginx/sites-available/",
+      "sudo systemctl restart nginx",
+    ]
       
-  # }
+  }
 }
 
 resource "aws_instance" "private_instance" {

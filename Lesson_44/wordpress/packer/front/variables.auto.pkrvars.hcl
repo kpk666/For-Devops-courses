@@ -1,0 +1,6 @@
+vpc_id = "vpc-0f5259b11a88615cf"
+subnet_id = "subnet-0e9dc8827c272dc8d"
+#subnet_id = "subnet-058dde08941525ee5"
+sg_allow_ssh_from_bastion = "sg-09d4f198103cc29fd"
+ssh_bastion_host = "13.58.239.39"
+nginx_wordpress_conf_back_lb = "internal-alb-back-1027617564.us-east-2.elb.amazonaws.com"

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: replica-test
+  labels:
+    app  : k8s-replicaset
+    env  : prod
+    owner: dos11-student
+spec:  
+  replicas: 3
+  selector:
+    matchLabels:
+      app  : k8s-replicaset
+      env  : prod
+      owner: dos11-student
+  template:
+    metadata:
+      labels:
+        app  : k8s-replicaset
+        env  : prod
+        owner: dos11-student
+    spec:
+      containers:
+      - name: my-amazon-apache
+        image: kpk666/docker_practice:latest

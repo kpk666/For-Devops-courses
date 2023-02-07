@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+    app  : k8s-daemonset
+    owner: dos11-student
+spec:
+  selector:
+    matchLabels:
+      name: fluentd-elasticsearch
+  template:
+    metadata:
+      labels:
+        name: fluentd-elasticsearch
+        k8s-app: fluentd-logging
+        app  : k8s-daemonset        
+        owner: dos11-student
+    spec:      
+      containers:
+      - name: fluentd-elasticsearch
+        image: kpk666/docker_practice:nginx1.23.3
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi        
+      terminationGracePeriodSeconds: 30      

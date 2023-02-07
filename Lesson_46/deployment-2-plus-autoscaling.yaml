@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-autoscaling
+  labels:
+    app : k8s-application
+    env: prod
+    owner: dos11-student
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      project: dos11
+  template:
+    metadata:
+      labels:
+        project: dos11
+    spec:
+      containers:
+        - name : my-web
+          image: kpk666/docker_practice:latest
+          ports:
+           - containerPort: 80   
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-practice  
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v2
+    kind: Deployment
+    name: deployment-autoscaling
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource: 
+      name: memory
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80

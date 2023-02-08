@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    app  : k8s-statefulsets
+    env  : prod
+    owner: dos11-student
+spec:
+  ports:
+  - port: 80
+    name: my-k8s-practice
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-k8s-statefulset-practice
+spec:
+  selector:
+    matchLabels:
+      app: my-nginx 
+  serviceName: "nginx"
+  replicas: 3 
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: my-nginx
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: kpk666/docker_practice:nginx1.23.3
+        ports:
+        - containerPort: 80
+          name: my-k8s-practice
+        

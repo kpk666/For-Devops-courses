@@ -1,0 +1,80 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: pod-nginx
+  labels:
+    app: pod1
+    owner: dos11-student
+spec:
+  containers:
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: kpk666/docker_practice:nginx1.23.3
+    name: pod-nginx
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pod-nginx-service
+spec:
+  selector:
+    app: pod1
+  ports:
+  # Default port used by the image
+  - port: 80
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: pod-linux
+  labels:
+    app: pod-linux
+    owner: dos11-student
+spec:
+  containers:
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: kpk666/docker_practice:latest
+    name: pod-linux
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pod-linux-service
+spec:
+  selector:
+    app: pod-linux
+  ports:
+  # Default port used by the image
+  - port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-doss11-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /foo(/|$)(.*)
+        backend:
+          service:
+            name: pod-nginx-service
+            port:
+              number: 80
+      - pathType: Prefix
+        path: /bar(/|$)(.*)
+        backend:
+          service:
+            name: pod-linux-service
+            port:
+              number: 80

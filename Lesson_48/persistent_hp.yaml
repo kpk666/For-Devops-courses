@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: persistent-deploy
+  labels:
+    app : k8s-application
+    env: practice-room
+    owner: dos11-student
+    project: dos11
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      project: dos11
+  template:
+    metadata:
+      labels:
+        project: dos11
+    spec:
+      containers:
+        - name : persistent-deploy
+          image: kpk666/docker_practice:latest
+          ports:
+           - containerPort: 80
+          volumeMounts:
+          - name: persistent
+            mountPath: /home
+      volumes:
+        - name: persistent
+          persistentVolumeClaim:
+            claimName: persistent
+      restartPolicy: Always
+
+  
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: persistent
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-nordport
+  labels: 
+    env: practice
+    owner: dos11-student
+spec:
+  selector:
+    project: dos11
+  type: NodePort
+  ports:
+  - name: my-service-nordport
+    protocol: TCP
+    port: 8080
+    targetPort: 80
+    nodePort: 30666

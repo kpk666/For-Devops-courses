@@ -1,0 +1,137 @@
+# apiVersion : v1
+# kind: Pod
+# metadata:
+#   name: configmap
+#   namespace: default
+#   labels: 
+#     app : k8s-application
+#     env: practice-room
+#     owner: dos11-student
+#     project: dos11
+# spec:
+#   containers: 
+#     - name : configmap
+#       image: kpk666/docker_practice:nginx1.23.3
+#       env:
+#       - name: KEY
+#         valueFrom:
+#           configMapKeyRef:
+#             name: myconfig
+#             key: key
+#       ports:
+#         - containerPort: 80
+#       volumeMounts:
+#       - name: configmap
+#         mountPath: /etc/nginx/conf.d/default.conf
+#         subPath: default.conf
+#       - name: configmap
+#         mountPath: /var/www/html/index.html
+#         subPath: index.html
+
+#   volumes:
+#     - name: configmap
+#       configMap:
+#         name: myconfig
+#         items:
+#           - key: nginx.conf
+#             path: default.conf
+#           - key: index.html
+#             path: index.html
+#   restartPolicy: Always
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: configmap
+  labels:
+    app : k8s-application
+    env: practice-room
+    owner: dos11-student
+    project: dos11
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      project: dos11
+  template:
+    metadata:
+      labels:
+        project: dos11
+    spec:
+      containers:
+        - name : configmap
+          image: kpk666/docker_practice:nginx1.23.3
+          env:
+          - name: KEY
+            valueFrom:
+              configMapKeyRef:
+                name: myconfig
+                key: key
+          ports:
+           - containerPort: 80
+          volumeMounts:
+          - name: configmap
+            mountPath: /etc/nginx/conf.d/default.conf
+            subPath: default.conf
+          - name: configmap
+            mountPath: /var/www/html/index.html
+            subPath: index.html
+
+      volumes:
+        - name: configmap
+          configMap:
+            name: myconfig
+            items:
+              - key: nginx.conf
+                path: default.conf
+              - key: index.html
+                path: index.html
+      restartPolicy: Always
+             
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service-nordport
+  labels: 
+    env: practice
+    owner: dos11-student
+spec:
+  selector:
+    project: dos11
+  type: NodePort
+  ports:
+  - name: my-service-nordport
+    protocol: TCP
+    port: 8080
+    targetPort: 80
+    nodePort: 30666
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myconfig
+  namespace: default
+data:
+  key: value
+  nginx.conf: |
+    server {
+      listen 80;
+      server_name localhost;
+      location / {    
+        root /var/www/html;        
+        index index.html index.htm index.nginx-debian.html;
+        try_files $uri $uri/ =404;
+      }        
+    }
+  index.html: |
+    <html>
+    <body bgcolor="black">
+    <h2><font color="gold">Nginx test for Kubernetes<font color=red"> v0.12</font></h2><br><p>
+    <font color="green">Just simple string: <font color="aqua">$myip<br><br>
+    <font color="margenta">
+    <b>Version 1.0<br>
+    </body>
+    </html>

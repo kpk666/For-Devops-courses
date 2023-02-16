@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mypersistent
+  labels:
+    app : k8s-application
+    env: practice-room
+    owner: dos11-student
+    project: dos11
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: fast 
+  hostPath:
+    path: /home    
+    type: FileOrCreate

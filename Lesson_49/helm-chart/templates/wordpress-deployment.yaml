@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "wordpress.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec: 
+  selector:
+    matchLabels:
+      {{- include "wordpress.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "wordpress.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: wordpress
+        image: {{ .Values.wordpress.deployment.image }}
+        resources:                   
+          requests:
+            cpu: 100m            
+          limits:
+            cpu: 100m            
+        ports:
+          - name: http
+            containerPort: 80
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: {{ template "mysql.fullname" . }}
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "mysql.secrets" . }}
+              key: db-password
+      volumes:
+      - name: wp-data
+        persistentVolumeClaim:
+          claimName: {{ template "wordpress.pvc" . }}

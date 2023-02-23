@@ -1,0 +1,28 @@
+grafana:
+  enabled: false
+alertmanager:
+  enabled: false
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs: |
+      - job_name: 'ui'
+        static_configs:
+          - targets:
+            - 'ui.default.svc.cluster.local:9292'  
+      - job_name: 'blackbox'
+        metrics_path: /probe
+        params:
+          module: [http_2xx] 
+        static_configs:
+          - targets:
+            - 'ui.default.svc.cluster.local:9292'            
+            - 'comment.default.svc.cluster.local:9292'  
+            - 'post.default.svc.cluster.local:5000'        
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: 'prometheus-blackbox-exporter.default.svc.cluster.local:9115'
+ 
